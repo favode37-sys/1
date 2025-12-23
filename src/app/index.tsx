@@ -4,10 +4,14 @@ import { StackDisplay } from '../components/StackDisplay';
 import { ChipMascot } from '../components/ChipMascot';
 import { PokerCard } from '../components/PokerCard';
 import { ActionButtons } from '../components/ActionButtons';
+import { JuicyButton } from '../components/JuicyButton';
+import { Link, useRouter } from 'expo-router';
 import { COLORS, SPACING } from '../constants/theme';
 import { StatusBar } from 'expo-status-bar';
 
 export default function Index() {
+    const router = useRouter();
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <StatusBar style="light" />
@@ -42,6 +46,15 @@ export default function Index() {
             </View>
 
             <View style={{ height: 40 }} />
+
+            {/* Navigation Button */}
+            <JuicyButton
+                title="PLAY BLITZ MODE"
+                variant="primary"
+                onPress={() => router.push('/game')}
+            />
+
+            <View style={{ height: 20 }} />
             <Text style={{ color: COLORS.textSecondary }}>Tap buttons to feel haptics!</Text>
 
         </ScrollView>
@@ -71,4 +84,3 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     }
 });
-

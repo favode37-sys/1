@@ -57,11 +57,15 @@ export const BlitzGame = () => {
                 <View style={styles.scoreContainer}>
                     <Text style={styles.scoreLabel}>STREAK</Text>
                     <Text style={styles.scoreValue}>{useGameStore.getState().streak}</Text>
+                    {/* DEBUG INFO */}
+                    <Text style={{ fontSize: 8, color: '#666', marginTop: 2 }}>
+                        ID: {currentScenario.id}
+                    </Text>
                 </View>
             </View>
 
-            {/* GAME AREA */}
-            <View style={styles.gameArea}>
+            {/* GAME AREA - KEY FORCES RE-RENDER */}
+            <View style={styles.gameArea} key={currentScenario.id}>
                 {/* Mascot floats near the pot/table */}
                 <View style={styles.mascotContainer}>
                     <ChipMascot mood={feedback === 'correct' ? 'happy' : feedback === 'wrong' ? 'shocked' : 'neutral'} />

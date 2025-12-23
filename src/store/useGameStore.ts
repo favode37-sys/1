@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { supabase, HandScenario } from '../services/supabase';
 
-// --- FALLBACK DATA (OFFLINE MODE) ---
+// --- FALLBACK DATA (ROBUST OFFLINE MODE) ---
 const FALLBACK_SCENARIOS: HandScenario[] = [
     {
-        id: 'fallback-1',
+        id: 'fb_1',
         difficulty: 'easy',
         correct_action: 'fold',
-        chip_explanation: "7-2 разномастные — это мусор. В ранней позиции мы всегда это сбрасываем. Не трать фишки!",
+        chip_explanation: "7-2 разномастные (72o) — это худшая рука в покере. Фолдим без сожалений!",
         context: {
             holeCards: [{ rank: '7', suit: 'hearts' }, { rank: '2', suit: 'clubs' }],
             communityCards: [],
@@ -16,10 +16,10 @@ const FALLBACK_SCENARIOS: HandScenario[] = [
         }
     },
     {
-        id: 'fallback-2',
+        id: 'fb_2',
         difficulty: 'medium',
         correct_action: 'raise',
-        chip_explanation: "У тебя карманные Короли (KK)! Это монстр-рука. Нужно повышать ставки, чтобы раздуть банк.",
+        chip_explanation: "Карманные Короли (KK)! Это премиум-рука. Обязательно повышаем.",
         context: {
             holeCards: [{ rank: 'K', suit: 'diamonds' }, { rank: 'K', suit: 'spades' }],
             communityCards: [{ rank: '9', suit: 'hearts' }, { rank: '5', suit: 'clubs' }, { rank: '2', suit: 'diamonds' }],
@@ -28,10 +28,10 @@ const FALLBACK_SCENARIOS: HandScenario[] = [
         }
     },
     {
-        id: 'fallback-3',
+        id: 'fb_3',
         difficulty: 'hard',
         correct_action: 'call',
-        chip_explanation: "У тебя натсовое флеш-дро. Шансы банка позволяют нам уравнять ставку и посмотреть терн.",
+        chip_explanation: "У нас Флеш-дро (не хватает 1 карты до флеша). Шансы банка хорошие, коллируем.",
         context: {
             holeCards: [{ rank: 'A', suit: 'hearts' }, { rank: '5', suit: 'hearts' }],
             communityCards: [{ rank: 'K', suit: 'hearts' }, { rank: 'J', suit: 'spades' }, { rank: '2', suit: 'hearts' }],
@@ -64,53 +64,38 @@ export const useGameStore = create<GameState>((set, get) => ({
     feedback: null,
 
     fetchScenario: async () => {
+        const { currentScenario } = get();
         set({ loading: true, feedback: null });
-        try {
-            // 1. Try to fetch from Supabase
-            const { count } = await supabase
-                .from('hand_scenarios')
-                .select('*', { count: 'exact', head: true });
+        console.log('🔄 Fetching new scenario...');
 
-            if (count && count > 0) {
-                const randomOffset = Math.floor(Math.random() * count);
-                const { data, error } = await supabase
-                    .from('hand_scenarios')
-                    .select('*')
-                    .range(randomOffset, randomOffset)
-                    .maybeSingle();
+        // --- DETERMINISTIC ROTATION (DEBUGGING) ---
+        await new Promise(r => setTimeout(r, 300));
 
-                if (data && !error) {
-                    // Helper to ensure JSON is parsed correctly if it comes as string (rare but possible)
-                    const parsedContext = typeof data.context === 'string'
-                        ? JSON.parse(data.context)
-                        : data.context;
-
-                    set({
-                        currentScenario: { ...data, context: parsedContext } as HandScenario,
-                        loading: false
-                    });
-                    return;
-                }
-            }
-
-            throw new Error("No data in DB"); // Trigger fallback
-        } catch (e) {
-            console.log('⚠️ Network/DB Error or Empty DB. Using Fallback Data.');
-            // 2. FALLBACK LOGIC
-            const randomFallback = FALLBACK_SCENARIOS[Math.floor(Math.random() * FALLBACK_SCENARIOS.length)];
-            set({
-                currentScenario: randomFallback,
-                loading: false
-            });
+        let currentIndex = -1;
+        if (currentScenario) {
+            // Find current index (fix: ID format is 'fb_1_timestamp', so we use startsWith)
+            currentIndex = FALLBACK_SCENARIOS.findIndex(s => currentScenario.id.startsWith(s.id));
         }
+
+        const nextIndex = (currentIndex + 1) % FALLBACK_SCENARIOS.length;
+        const baseScenario = FALLBACK_SCENARIOS[nextIndex];
+
+        // Unique ID ensures React treats it as a new object
+        const nextScenario = { ...baseScenario, id: `${baseScenario.id}_${Date.now()}` };
+
+        console.log(`✅ Loaded Scenario: ${nextScenario.id} (Index: ${nextIndex})`);
+
+        set({
+            currentScenario: nextScenario,
+            loading: false
+        });
     },
 
     submitAction: (action) => {
         const { currentScenario, stack, score, streak } = get();
         if (!currentScenario) return;
-
+        console.log(`👉 User Action: ${action} | Correct: ${currentScenario.correct_action}`);
         const isCorrect = action === currentScenario.correct_action;
-
         if (isCorrect) {
             set({
                 stack: stack + 50 + (streak * 10),
@@ -128,6 +113,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     nextHand: () => {
+        console.log('⏭️ Moving to next hand');
         get().fetchScenario();
     },
 

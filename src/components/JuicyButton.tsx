@@ -12,13 +12,13 @@ interface JuicyButtonProps {
     style?: ViewStyle;
 }
 
-export const JuicyButton: React.FC<JuicyButtonProps> = ({
+export const JuicyButton = React.forwardRef<View, JuicyButtonProps>(({
     title,
     onPress,
     variant = 'primary',
     disabled,
     style
-}) => {
+}, ref) => {
     const translateY = useSharedValue(0);
 
     const colors: Record<string, { face: string; shadow: string }> = {
@@ -54,6 +54,7 @@ export const JuicyButton: React.FC<JuicyButtonProps> = ({
 
     return (
         <Pressable
+            ref={ref}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
             disabled={disabled}
@@ -77,7 +78,7 @@ export const JuicyButton: React.FC<JuicyButtonProps> = ({
             </Animated.View>
         </Pressable>
     );
-};
+});
 
 const styles = StyleSheet.create({
     shadow: {
