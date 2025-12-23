@@ -7,6 +7,7 @@ import { ChipMascot } from '../components/ChipMascot';
 import { PokerTable } from '../components/PokerTable';
 import { PokerCard } from '../components/PokerCard';
 import { ActionButtons } from '../components/ActionButtons';
+import { LevelHeader } from '../components/LevelHeader';
 import { COLORS, SPACING, RADIUS } from '../constants/theme';
 import Animated, { FadeIn, SlideInDown, ZoomIn } from 'react-native-reanimated';
 
@@ -16,6 +17,9 @@ export const BlitzGame = () => {
     const {
         stack,
         score,
+        xp,
+        level,
+        xpToNextLevel,
         currentScenario,
         feedback,
         loading,
@@ -51,17 +55,16 @@ export const BlitzGame = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* HEADER */}
-            <View style={styles.header}>
+            {/* PROGRESSION HEADER */}
+            <LevelHeader level={level} xp={xp} xpToNextLevel={xpToNextLevel} />
+
+            {/* GAME STATUS (Health/Stack) */}
+            <View style={{ alignItems: 'center', marginTop: SPACING.sm, zIndex: 10 }}>
                 <StackDisplay amount={stack} damage={feedback === 'wrong'} />
-                <View style={styles.scoreContainer}>
-                    <Text style={styles.scoreLabel}>STREAK</Text>
-                    <Text style={styles.scoreValue}>{useGameStore.getState().streak}</Text>
-                    {/* DEBUG INFO */}
-                    <Text style={{ fontSize: 8, color: '#666', marginTop: 2 }}>
-                        ID: {currentScenario.id}
-                    </Text>
-                </View>
+                {/* Debug ID still useful */}
+                <Text style={{ fontSize: 8, color: '#666', marginTop: 2 }}>
+                    ID: {currentScenario.id}
+                </Text>
             </View>
 
             {/* GAME AREA - KEY FORCES RE-RENDER */}
