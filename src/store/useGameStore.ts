@@ -1,12 +1,45 @@
 import { create } from 'zustand';
 import { supabase, HandScenario } from '../services/supabase';
 
-// Helper to generate mock cards
-const CARDS = [
-    { rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'hearts' }, { rank: 'Q', suit: 'diamonds' },
-    { rank: 'J', suit: 'clubs' }, { rank: '10', suit: 'spades' }, { rank: '9', suit: 'hearts' },
-    { rank: '2', suit: 'diamonds' }, { rank: '7', suit: 'clubs' }
-] as const;
+// --- FALLBACK DATA (OFFLINE MODE) ---
+const FALLBACK_SCENARIOS: HandScenario[] = [
+    {
+        id: 'fallback-1',
+        difficulty: 'easy',
+        correct_action: 'fold',
+        chip_explanation: "7-2 разномастные — это мусор. В ранней позиции мы всегда это сбрасываем. Не трать фишки!",
+        context: {
+            holeCards: [{ rank: '7', suit: 'hearts' }, { rank: '2', suit: 'clubs' }],
+            communityCards: [],
+            potSize: 10,
+            position: 'UTG'
+        }
+    },
+    {
+        id: 'fallback-2',
+        difficulty: 'medium',
+        correct_action: 'raise',
+        chip_explanation: "У тебя карманные Короли (KK)! Это монстр-рука. Нужно повышать ставки, чтобы раздуть банк.",
+        context: {
+            holeCards: [{ rank: 'K', suit: 'diamonds' }, { rank: 'K', suit: 'spades' }],
+            communityCards: [{ rank: '9', suit: 'hearts' }, { rank: '5', suit: 'clubs' }, { rank: '2', suit: 'diamonds' }],
+            potSize: 50,
+            position: 'BTN'
+        }
+    },
+    {
+        id: 'fallback-3',
+        difficulty: 'hard',
+        correct_action: 'call',
+        chip_explanation: "У тебя натсовое флеш-дро. Шансы банка позволяют нам уравнять ставку и посмотреть терн.",
+        context: {
+            holeCards: [{ rank: 'A', suit: 'hearts' }, { rank: '5', suit: 'hearts' }],
+            communityCards: [{ rank: 'K', suit: 'hearts' }, { rank: 'J', suit: 'spades' }, { rank: '2', suit: 'hearts' }],
+            potSize: 120,
+            position: 'BB'
+        }
+    }
+];
 
 interface GameState {
     stack: number;
@@ -22,43 +55,6 @@ interface GameState {
     nextHand: () => void;
 }
 
-// FALLBACK DATA (Offline Mode)
-const FALLBACK_SCENARIOS: HandScenario[] = [
-    {
-        id: 'fb_1',
-        context: {
-            holeCards: [{ rank: 'A', suit: 'spades' }, { rank: 'K', suit: 'hearts' }],
-            communityCards: [{ rank: 'Q', suit: 'spades' }, { rank: 'J', suit: 'spades' }, { rank: '10', suit: 'spades' }],
-            potSize: 200
-        },
-        correct_action: 'raise',
-        chip_explanation: 'Royal Flush! Do not slow play this on a wet board.',
-        difficulty: 'easy'
-    },
-    {
-        id: 'fb_2',
-        context: {
-            holeCards: [{ rank: '7', suit: 'clubs' }, { rank: '2', suit: 'diamonds' }],
-            communityCards: [{ rank: 'A', suit: 'hearts' }, { rank: 'A', suit: 'diamonds' }, { rank: 'K', suit: 'clubs' }],
-            potSize: 50
-        },
-        correct_action: 'fold',
-        chip_explanation: '7-2 offsuit on a board that smashes opponent ranges. Fold.',
-        difficulty: 'easy'
-    },
-    {
-        id: 'fb_3',
-        context: {
-            holeCards: [{ rank: '10', suit: 'hearts' }, { rank: '9', suit: 'hearts' }],
-            communityCards: [{ rank: '8', suit: 'hearts' }, { rank: '7', suit: 'hearts' }, { rank: '2', suit: 'spades' }],
-            potSize: 150
-        },
-        correct_action: 'call',
-        chip_explanation: 'Straight Flush Draw. Implied odds justify a call.',
-        difficulty: 'medium'
-    }
-];
-
 export const useGameStore = create<GameState>((set, get) => ({
     stack: 1000,
     score: 0,
@@ -68,20 +64,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     feedback: null,
 
     fetchScenario: async () => {
-        set({ loading: true });
-
+        set({ loading: true, feedback: null });
         try {
-            // First, get count for random selection
-            const { count, error: countError } = await supabase
+            // 1. Try to fetch from Supabase
+            const { count } = await supabase
                 .from('hand_scenarios')
                 .select('*', { count: 'exact', head: true });
 
-            // Check for connection error or empty DB
-            if (countError || count === null || count === 0) {
-                throw new Error('Offline or Empty DB');
-            }
-
-            if (count) {
+            if (count && count > 0) {
                 const randomOffset = Math.floor(Math.random() * count);
                 const { data, error } = await supabase
                     .from('hand_scenarios')
@@ -89,20 +79,29 @@ export const useGameStore = create<GameState>((set, get) => ({
                     .range(randomOffset, randomOffset)
                     .maybeSingle();
 
-                if (error || !data) {
-                    throw error || new Error('No data returned');
-                }
+                if (data && !error) {
+                    // Helper to ensure JSON is parsed correctly if it comes as string (rare but possible)
+                    const parsedContext = typeof data.context === 'string'
+                        ? JSON.parse(data.context)
+                        : data.context;
 
-                set({ currentScenario: data as HandScenario, loading: false, feedback: null });
+                    set({
+                        currentScenario: { ...data, context: parsedContext } as HandScenario,
+                        loading: false
+                    });
+                    return;
+                }
             }
 
+            throw new Error("No data in DB"); // Trigger fallback
         } catch (e) {
-            console.log('⚠️ Using Fallback Data (Offline Mode)'); // Requested log
-            // Simulate delay for feel
-            await new Promise(r => setTimeout(r, 500));
-
+            console.log('⚠️ Network/DB Error or Empty DB. Using Fallback Data.');
+            // 2. FALLBACK LOGIC
             const randomFallback = FALLBACK_SCENARIOS[Math.floor(Math.random() * FALLBACK_SCENARIOS.length)];
-            set({ currentScenario: randomFallback, loading: false, feedback: null });
+            set({
+                currentScenario: randomFallback,
+                loading: false
+            });
         }
     },
 
@@ -114,14 +113,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         if (isCorrect) {
             set({
-                stack: stack + 50 + (streak * 10), // Bonus for streak
+                stack: stack + 50 + (streak * 10),
                 score: score + 100,
                 streak: streak + 1,
                 feedback: 'correct'
             });
         } else {
             set({
-                stack: Math.max(0, stack - 200), // Punishment
+                stack: Math.max(0, stack - 200),
                 streak: 0,
                 feedback: 'wrong'
             });
