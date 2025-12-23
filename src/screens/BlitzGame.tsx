@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, SafeAreaView, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, ActivityIndicator, SafeAreaView, Dimensions, Platform } from 'react-native';
 import { useGameStore } from '../store/useGameStore';
 import { JuicyButton } from '../components/JuicyButton';
 import { StackDisplay } from '../components/StackDisplay';
@@ -109,6 +109,16 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.background,
+        ...Platform.select({
+            web: {
+                maxWidth: 480,
+                width: '100%',
+                alignSelf: 'center',
+                height: '100%',
+                // React Native Web supports standard CSS shadow
+                boxShadow: '0px 0px 50px rgba(0,0,0,0.5)',
+            }
+        })
     },
     loadingContainer: {
         flex: 1,
