@@ -1,0 +1,42 @@
+{
+    "expo": {
+        "name": "PokerLingo",
+        "slug": "pokerlingo",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "userInterfaceStyle": "light",
+        "splash": {
+            "image": "./assets/icon.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#ffffff"
+        },
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "ios": {
+            "supportsTablet": true
+        },
+        "android": {
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/icon.png",
+                "backgroundColor": "#ffffff"
+            }
+        },
+        "web": {
+            "favicon": "./assets/icon.png",
+            "bundler": "metro"
+        },
+        "plugins": [
+            "expo-router",
+            [
+                "expo-font",
+                {
+                    "fonts": []
+                }
+            ]
+        ],
+        "scheme": "pokerlingo",
+        "newArchEnabled": true
+    }
+}

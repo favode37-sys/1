@@ -1,0 +1,50 @@
+# Project Blueprint: PokerLingo (MVP)
+
+## 1. Project Goal
+Create a gamified poker learning app for amateurs.
+**Core Philosophy:** "Duolingo for Poker".
+**Visual Style:** Tactile Materialism. Clean, colorful, "juicy" UI with physics-based feedback.
+**Target Audience:** Casual players, not pros.
+
+## 2. Tech Stack (Strict Constraints)
+- **Framework:** React Native (Expo SDK 52+).
+- **Language:** TypeScript.
+- **State Management:** Zustand (for simple global state like User Stack).
+- **Backend/Auth:** Supabase (Auth + DB for user progress).
+- **Animations:** `react-native-reanimated` (Crucial for tactile feel).
+- **Gestures:** `react-native-gesture-handler`.
+- **Haptics:** `expo-haptics` (Trigger on ALL interactions).
+- **Navigation:** `expo-router`.
+
+## 3. Core Mechanics: "Blitz Mode"
+The user enters a rapid-fire learning session.
+
+### Flow:
+1.  **Scenario:** User sees a poker table view (simplified). Cards, position, pot size are displayed.
+2.  **Action:** User has 3 distinct buttons/actions: FOLD, CALL, RAISE.
+    * *Interaction:* Buttons must feel physical (press in, bounce back).
+3.  **Result:**
+    * **Correct:** "Chip" (Mascot) celebrates. Positive sound. Stack increases slightly (+EV).
+    * **Incorrect:** An overlay appears. "Chip" explains *why* it was wrong (simple text). User's stack decreases (Health damage).
+4.  **Game Over:** If Stack reaches 0, the session ends.
+
+## 4. Visual & Audio Guidelines (The "Tactile" Feel)
+- **Mascot:** "Chip" (an animated poker chip character). Must appear in Modals and Feedback screens.
+- **The Stack:** The user's health is represented as a visual stack of chips. When damaged, chips physically fall off/shatter.
+- **Colors:** Duolingo-inspired palette but adapted for poker.
+    * Primary Action (Call/Bet): Bright, inviting Green.
+    * Danger/Fold: Distinct Red/Orange.
+    * Background: Clean, not the cliche "casino green felt". Use modern matte colors.
+- **Feedback:** heavily rely on Haptic Feedback (Light impact on tap, Heavy impact on error).
+
+## 5. Data Structure (Supabase)
+Table: `hand_scenarios`
+- `id`: uuid
+- `context`: jsonb (player cards, board cards, position, pot odds)
+- `correct_action`: string ('fold', 'call', 'raise')
+- `explanation`: text (What Chip says if user fails)
+- `difficulty`: int
+
+## 6. Testing Strategy
+- Automated agent testing script to simulate a user playing through 5 hands.
+- Verify stack deduction logic on wrong answers.
