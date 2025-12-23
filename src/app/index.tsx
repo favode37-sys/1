@@ -1,11 +1,8 @@
 
-import { View, StyleSheet, Text, ScrollView } from 'react-native';
-import { StackDisplay } from '../components/StackDisplay';
+import { View, StyleSheet, Text } from 'react-native';
 import { ChipMascot } from '../components/ChipMascot';
-import { PokerCard } from '../components/PokerCard';
-import { ActionButtons } from '../components/ActionButtons';
 import { JuicyButton } from '../components/JuicyButton';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { COLORS, SPACING } from '../constants/theme';
 import { StatusBar } from 'expo-status-bar';
 
@@ -13,74 +10,52 @@ export default function Index() {
     const router = useRouter();
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.container}>
             <StatusBar style="light" />
 
-            {/* 1. Header with Stack and Mascot */}
-            <View style={styles.header}>
-                <StackDisplay amount={1000} />
-                <View style={{ width: 20 }} />
-                <ChipMascot mood="neutral" />
-            </View>
+            <View style={styles.content}>
+                <ChipMascot mood="happy" />
+                <View style={{ height: 40 }} />
 
-            <View style={{ height: 40 }} />
+                <Text style={styles.title}>PokerLingo</Text>
+                <Text style={styles.subtitle}>Master the GTO strategy</Text>
 
-            {/* 2. Poker Cards Showcase */}
-            <Text style={styles.label}>TACTILE CARDS</Text>
-            <View style={styles.row}>
-                <PokerCard rank="A" suit="spades" />
-                <PokerCard rank="K" suit="hearts" />
-                <PokerCard rank="10" suit="clubs" isFaceUp={false} />
-            </View>
+                <View style={{ height: 60 }} />
 
-            <View style={{ height: 60 }} />
-
-            {/* 3. Action Buttons Showcase */}
-            <Text style={styles.label}>INTERACTIVE CONTROLS</Text>
-            <View style={{ width: '100%' }}>
-                <ActionButtons
-                    onFold={() => console.log('Fold')}
-                    onCall={() => console.log('Call')}
-                    onRaise={() => console.log('Raise')}
+                <JuicyButton
+                    title="PLAY BLITZ MODE"
+                    variant="primary"
+                    onPress={() => router.push('/game')}
+                    style={{ width: '100%', maxWidth: 300 }}
                 />
             </View>
-
-            <View style={{ height: 40 }} />
-
-            {/* Navigation Button */}
-            <JuicyButton
-                title="PLAY BLITZ MODE"
-                variant="primary"
-                onPress={() => router.push('/game')}
-            />
-
-            <View style={{ height: 20 }} />
-            <Text style={{ color: COLORS.textSecondary }}>Tap buttons to feel haptics!</Text>
-
-        </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flexGrow: 1,
+        flex: 1,
         backgroundColor: COLORS.background,
         alignItems: 'center',
-        paddingTop: 60,
-        paddingHorizontal: SPACING.md,
+        justifyContent: 'center',
+        padding: SPACING.lg,
     },
-    header: {
-        flexDirection: 'row',
+    content: {
         alignItems: 'center',
+        width: '100%',
     },
-    row: {
-        flexDirection: 'row',
-        gap: 10,
-    },
-    label: {
-        color: COLORS.textSecondary,
-        fontWeight: 'bold',
-        marginBottom: SPACING.md,
+    title: {
+        fontSize: 40,
+        fontWeight: '900',
+        color: COLORS.text,
         letterSpacing: 1,
+        marginBottom: SPACING.xs,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: COLORS.textSecondary,
+        fontWeight: '500',
+        letterSpacing: 0.5,
     }
 });
