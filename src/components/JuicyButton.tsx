@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, StyleSheet, Pressable, View, ViewStyle, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { soundManager } from '../services/SoundManager';
 import { COLORS, RADIUS, SPACING } from '../constants/theme';
 
 interface JuicyButtonProps {
@@ -43,6 +44,7 @@ export const JuicyButton = React.forwardRef<View, JuicyButtonProps>(({
         if (Platform.OS !== 'web') {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
+        soundManager.play('check');
         translateY.value = withSpring(6, { damping: 15, stiffness: 200 });
     };
 

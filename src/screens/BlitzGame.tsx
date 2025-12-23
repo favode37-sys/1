@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator, SafeAreaView, Dimensions, Platform } from 'react-native';
 import { useGameStore } from '../store/useGameStore';
 import { JuicyButton } from '../components/JuicyButton';
@@ -8,10 +9,10 @@ import { PokerTable } from '../components/PokerTable';
 import { PokerCard } from '../components/PokerCard';
 import { ActionButtons } from '../components/ActionButtons';
 import { LevelHeader } from '../components/LevelHeader';
+import { LevelUpModal } from '../components/LevelUpModal';
+import { SpeechBubble } from '../components/SpeechBubble';
 import { COLORS, SPACING, RADIUS } from '../constants/theme';
 import Animated, { FadeIn, SlideInDown, ZoomIn } from 'react-native-reanimated';
-
-const { width } = Dimensions.get('window');
 
 export const BlitzGame = () => {
     const {
@@ -23,22 +24,40 @@ export const BlitzGame = () => {
         currentScenario,
         feedback,
         loading,
+        showLevelUpModal,
         fetchScenario,
         submitAction,
-        nextHand
+        nextHand,
+        closeLevelUpModal
     } = useGameStore();
+
+    const [chipMessage, setChipMessage] = useState<string | null>(null);
 
     useEffect(() => {
         // Initial fetch
         fetchScenario();
     }, []);
 
+    // React to feedback for Chip's voice
     useEffect(() => {
         if (feedback === 'correct') {
+            const praises = ["Nice!", "GTO!", "Solid!", "Boom!", "Correct!"];
+            const randomPraise = praises[Math.floor(Math.random() * praises.length)];
+            setChipMessage(randomPraise);
+
+            // Celebration Timer
             const timer = setTimeout(() => {
+                setChipMessage(null); // Clear message
                 nextHand();
-            }, 1500); // 1.5s celebration
+            }, 1500);
             return () => clearTimeout(timer);
+        } else if (feedback === 'wrong') {
+            const warnings = ["Ouch!", "Bad Odds!", "Mistake!", "-EV"];
+            const randomWarning = warnings[Math.floor(Math.random() * warnings.length)];
+            setChipMessage(randomWarning);
+            // Don't auto-clear immediately, let the overlay take over context logic
+        } else {
+            setChipMessage(null);
         }
     }, [feedback]);
 
@@ -58,33 +77,46 @@ export const BlitzGame = () => {
             {/* PROGRESSION HEADER */}
             <LevelHeader level={level} xp={xp} xpToNextLevel={xpToNextLevel} />
 
-            {/* GAME STATUS (Health/Stack) */}
+            {/* GAME STATUS (Stack) */}
             <View style={{ alignItems: 'center', marginTop: SPACING.sm, zIndex: 10 }}>
                 <StackDisplay amount={stack} damage={feedback === 'wrong'} />
-                {/* Debug ID still useful */}
                 <Text style={{ fontSize: 8, color: '#666', marginTop: 2 }}>
                     ID: {currentScenario.id}
                 </Text>
             </View>
 
-            {/* GAME AREA - KEY FORCES RE-RENDER */}
+            {/* GAME AREA - ABSOLUTE LAYOUT */}
             <View style={styles.gameArea} key={currentScenario.id}>
-                {/* Mascot floats near the pot/table */}
-                <View style={styles.mascotContainer}>
-                    <ChipMascot mood={feedback === 'correct' ? 'happy' : feedback === 'wrong' ? 'shocked' : 'neutral'} />
-                </View>
 
+                {/* 1. TABLE (Centered) */}
                 <PokerTable
                     communityCards={context.communityCards as any}
                     potSize={context.potSize}
                 />
 
-                {/* Hero Cards */}
-                <View style={styles.heroHand}>
+                {/* 2. MASCOT & SPEECH BUBBLE (Floating) */}
+                <View style={styles.mascotContainer}>
+                    <ChipMascot mood={feedback === 'correct' ? 'happy' : feedback === 'wrong' ? 'shocked' : 'neutral'} />
+                    {chipMessage && <SpeechBubble message={chipMessage} />}
+                </View>
+
+                {/* 3. HERO HAND (Overlaid at Bottom Center) */}
+                <View style={styles.heroHandOverlay}>
                     {context.holeCards.map((card: any, idx: number) => (
-                        <PokerCard key={idx} rank={card.rank} suit={card.suit} />
+                        <View key={idx} style={[
+                            styles.heroCardWrapper,
+                            {
+                                transform: [
+                                    { rotate: idx === 0 ? '-5deg' : '5deg' },
+                                    { translateY: idx === 0 ? 0 : 5 }
+                                ]
+                            }
+                        ]}>
+                            <PokerCard rank={card.rank} suit={card.suit} />
+                        </View>
                     ))}
                 </View>
+
             </View>
 
             {/* CONTROLS */}
@@ -97,7 +129,7 @@ export const BlitzGame = () => {
                 />
             </View>
 
-            {/* FEEDBACK OVERLAY (Only on Wrong) */}
+            {/* FEEDBACK OVERLAY */}
             {feedback === 'wrong' && (
                 <Animated.View entering={ZoomIn} style={styles.feedbackOverlay}>
                     <View style={styles.feedbackCard}>
@@ -108,6 +140,13 @@ export const BlitzGame = () => {
                     </View>
                 </Animated.View>
             )}
+
+            {/* LEVEL UP MODAL */}
+            <LevelUpModal
+                visible={showLevelUpModal}
+                level={level}
+                onClose={closeLevelUpModal}
+            />
         </SafeAreaView>
     );
 };
@@ -122,7 +161,6 @@ const styles = StyleSheet.create({
                 width: '100%',
                 alignSelf: 'center',
                 height: '100%',
-                // React Native Web supports standard CSS shadow
                 boxShadow: '0px 0px 50px rgba(0,0,0,0.5)',
             }
         })
@@ -139,42 +177,39 @@ const styles = StyleSheet.create({
         fontFamily: 'System',
         fontWeight: 'bold',
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: SPACING.lg,
-        paddingTop: SPACING.md,
-        zIndex: 10,
-    },
-    scoreContainer: {
-        alignItems: 'flex-end',
-    },
-    scoreLabel: {
-        color: COLORS.textSecondary,
-        fontSize: 10,
-        fontWeight: '700',
-    },
-    scoreValue: {
-        color: COLORS.text,
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
     gameArea: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+        zIndex: 1,
     },
     mascotContainer: {
-        marginBottom: -30, // Overlap slightly with table
+        position: 'absolute',
+        top: 20,
+        left: 20,
         zIndex: 5,
+        // No scale here to keep Bubble crisp, scale Mascot inside logic if needed or just use default size
     },
-    heroHand: {
+    heroHandOverlay: {
+        position: 'absolute',
+        bottom: 80,
         flexDirection: 'row',
-        marginTop: SPACING.xl,
+        gap: -10,
+        zIndex: 20,
     },
+    heroCardWrapper: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        transform: [{ scale: 1.1 }]
+    },
+
     controls: {
         padding: SPACING.lg,
         paddingBottom: SPACING.xxl,
+        zIndex: 30,
     },
     feedbackOverlay: {
         ...StyleSheet.absoluteFillObject,
