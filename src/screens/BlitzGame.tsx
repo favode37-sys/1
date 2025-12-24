@@ -10,6 +10,7 @@ import { PokerCard } from '../components/PokerCard';
 import { ActionButtons } from '../components/ActionButtons';
 import { LevelHeader } from '../components/LevelHeader';
 import { LevelUpModal } from '../components/LevelUpModal';
+import { BankruptModal } from '../components/BankruptModal';
 import { SpeechBubble } from '../components/SpeechBubble';
 import { COLORS, SPACING, RADIUS } from '../constants/theme';
 import Animated, { FadeIn, SlideInDown, ZoomIn } from 'react-native-reanimated';
@@ -28,7 +29,9 @@ export const BlitzGame = () => {
         fetchScenario,
         submitAction,
         nextHand,
-        closeLevelUpModal
+        closeLevelUpModal,
+        isBankrupt,
+        refillStack
     } = useGameStore();
 
     const [chipMessage, setChipMessage] = useState<string | null>(null);
@@ -146,6 +149,12 @@ export const BlitzGame = () => {
                 visible={showLevelUpModal}
                 level={level}
                 onClose={closeLevelUpModal}
+            />
+
+            {/* BANKRUPT MODAL */}
+            <BankruptModal
+                visible={isBankrupt}
+                onRefill={refillStack}
             />
         </SafeAreaView>
     );

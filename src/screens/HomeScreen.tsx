@@ -1,11 +1,12 @@
 
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, Platform, Image } from 'react-native';
+import { View, StyleSheet, Text, Platform, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGameStore } from '../store/useGameStore';
 import { ChipMascot } from '../components/ChipMascot';
 import { JuicyButton } from '../components/JuicyButton';
 import { LevelHeader } from '../components/LevelHeader';
+import { StackDisplay } from '../components/StackDisplay';
 import { COLORS, SPACING, RADIUS } from '../constants/theme';
 import Animated, {
     useSharedValue,
@@ -50,9 +51,9 @@ export const HomeScreen = () => {
                         <Text style={styles.statIcon}>🔥</Text>
                         <Text style={styles.statValue}>{streak}</Text>
                     </View>
-                    <View style={[styles.statBadge, { marginLeft: 8 }]}>
-                        <Text style={styles.statIcon}>🪙</Text>
-                        <Text style={styles.statValue}>{stack}</Text>
+                    {/* Reuse StackDisplay but scale it down slightly if needed */}
+                    <View style={{ transform: [{ scale: 0.8 }], marginLeft: 8 }}>
+                        <StackDisplay amount={stack} />
                     </View>
                 </View>
             </View>
@@ -83,7 +84,24 @@ export const HomeScreen = () => {
                         style={styles.playButton}
                     />
                 </Animated.View>
+
+                <View style={{ height: 12 }} />
+
+                <JuicyButton
+                    title="PREFLOP TRAINER"
+                    variant="secondary"
+                    onPress={() => router.push('/preflop')}
+                />
+
                 <Text style={styles.versionText}>v0.1.0 • Pre-Alpha</Text>
+
+                {/* DEV ACCESS */}
+                <Pressable
+                    onPress={() => router.push('/dev')}
+                    style={{ marginTop: 20, padding: 10, opacity: 0.3 }}
+                >
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 10 }}>🛠️ DEV TOOLS</Text>
+                </Pressable>
             </View>
         </View>
     );
@@ -178,6 +196,5 @@ const styles = StyleSheet.create({
         color: COLORS.textSecondary,
         fontSize: 10,
         marginTop: SPACING.md,
-        opacity: 0.5,
     }
 });

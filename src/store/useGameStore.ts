@@ -133,17 +133,35 @@ export const useGameStore = create<GameState>()(
                     // PLAY WRONG SOUND
                     soundManager.play('wrong');
 
+                    const penalty = 200;
+                    const newStack = stack - penalty;
+                    const isBusted = newStack <= 0;
+
                     set({
-                        stack: Math.max(0, stack - 200),
+                        stack: Math.max(0, newStack),
                         streak: 0,
-                        feedback: 'wrong'
+                        feedback: 'wrong',
+                        isBankrupt: isBusted
                     });
                 }
             },
 
             closeLevelUpModal: () => set({ showLevelUpModal: false }),
 
+            refillStack: () => {
+                console.log('💰 Refill Success');
+                set({
+                    stack: 1000,
+                    streak: 0,
+                    isBankrupt: false,
+                    feedback: null // Clear accidental wrong feedback to proceed
+                });
+                get().nextHand();
+            },
+
             nextHand: () => {
+                const { isBankrupt } = get();
+                if (isBankrupt) return; // Block next hand if bankrupt
                 get().fetchScenario();
             },
 
@@ -156,7 +174,8 @@ export const useGameStore = create<GameState>()(
                     level: 1,
                     xpToNextLevel: 500,
                     feedback: null,
-                    showLevelUpModal: false
+                    showLevelUpModal: false,
+                    isBankrupt: false
                 });
                 get().fetchScenario();
             }
